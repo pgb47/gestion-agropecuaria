@@ -1,0 +1,149 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+:root {
+  --radius: 0.625rem;
+
+  /* App background: light blue-gray */
+  --background: #C8D5D3;
+  --foreground: #2C3A10;
+  --card: #F5F7F5;
+  --card-foreground: #2C3A10;
+  --popover: #F5F7F5;
+  --popover-foreground: #2C3A10;
+
+  /* Primary: dark olive green (headers/buttons) */
+  --primary: #4A5E1A;
+  --primary-foreground: #FFFFFF;
+
+  /* Secondary: medium green (dashboard cards) */
+  --secondary: #7A9A3A;
+  --secondary-foreground: #FFFFFF;
+
+  --muted: #EBF0E3;
+  --muted-foreground: #9BA8A3;
+
+  /* Accent: near-black green (borders/icons/hover) */
+  --accent: #2C3A10;
+  --accent-foreground: #FFFFFF;
+
+  /* Brick red */
+  --destructive: #C0392B;
+  --destructive-foreground: #FFFFFF;
+
+  --success: #4A5E1A;
+  --success-foreground: #FFFFFF;
+  --warning: #D4813A;
+  --warning-foreground: #FFFFFF;
+
+  --border: #2C3A10;
+  --input: #C8D5D3;
+  --ring: #2C3A10;
+
+  --sidebar: #4A5E1A;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #7A9A3A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #2C3A10;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #2C3A10;
+  --sidebar-ring: #7A9A3A;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+  label .req,
+  label[data-required="true"]::after {
+    color: #C0392B;
+  }
+  input, select, textarea {
+    background-color: #FFFFFF;
+    border-color: rgba(44, 58, 16, 0.25);
+  }
+  input:focus-visible, select:focus-visible, textarea:focus-visible,
+  [data-slot="select-trigger"]:focus-visible {
+    outline: none;
+    border-color: #2C3A10;
+    box-shadow: 0 0 0 2px rgba(44, 58, 16, 0.25);
+  }
+  label {
+    color: #2C3A10;
+    font-weight: 500;
+  }
+  ::placeholder { color: #9BA8A3; }
+}
+
+@layer components {
+  .surface-card {
+    background-color: var(--color-card);
+    border: 1px solid rgba(44, 58, 16, 0.15);
+    border-radius: 0.875rem;
+    box-shadow: 0 2px 6px rgba(44, 58, 16, 0.06), 0 8px 24px rgba(44, 58, 16, 0.08);
+  }
+  .table-striped tbody tr:nth-child(odd) { background-color: #F5F7F5; }
+  .table-striped tbody tr:nth-child(even) { background-color: #EBF0E3; }
+  .table-striped tbody tr:hover { background-color: #DDE7CC; }
+
+  .dash-card {
+    background-color: #7A9A3A;
+    color: #FFFFFF;
+    border: 1px solid rgba(44, 58, 16, 0.35);
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(44, 58, 16, 0.12), 0 12px 32px rgba(44, 58, 16, 0.15);
+    transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+  }
+  .dash-card:hover {
+    background-color: #6B8A2E;
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(44, 58, 16, 0.18), 0 18px 40px rgba(44, 58, 16, 0.22);
+  }
+}
