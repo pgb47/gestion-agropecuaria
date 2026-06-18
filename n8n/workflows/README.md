@@ -1,13 +1,20 @@
 # Workflows de n8n
 
-Esta carpeta contiene los workflows de **n8n** exportados en formato JSON.
+Workflows de **n8n** exportados en formato JSON (listos para importar).
 
-## Cómo importar un workflow
-1. Abrir la instancia de n8n.
+## Workflows incluidos
+
+| Archivo | Workflow | Nodos |
+|---|---|---|
+| `Consulta_Filtrada_tactos.json` | Consulta Filtrada -tactos | 5 |
+| `Crear_Paricion.json` | Crear Paricion | 10 |
+| `Listar_Pariciones.json` | Listar Pariciones | 8 |
+| `Crear_Tacto.json` | Crear Tacto | 18 |
+| `Listar_Tactos.json` | Listar Tactos | 3 |
+
+## Cómo importar
+1. Abrir n8n.
 2. **Workflows → Import from File**.
-3. Seleccionar el archivo `.json` correspondiente.
+3. Seleccionar el `.json` correspondiente.
 
-## Cómo exportar un workflow
-Desde el editor de n8n: **menú (···) → Download**, y guardar el `.json` en esta carpeta.
-
-> Los JSON definitivos los provee el Equipo 2. Reemplazar este archivo cuando estén disponibles.
+> Exportados desde la instancia `auto09.academia.ar`. La versión antigua y archivada de "Crear Tacto" se omitió a propósito.

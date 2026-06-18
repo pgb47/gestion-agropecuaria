@@ -1,0 +1,281 @@
+{
+  "name": "Listar Pariciones",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "pariciones-estimadas",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "b16f21c2-a7dc-48b1-a677-16ae816e4b65",
+      "name": "Webhook Pariciones Estimadas",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1712,
+        496
+      ],
+      "webhookId": "pariciones-estimadas",
+      "notesInFlow": true,
+      "notes": "Endpoint para Lovable: GET /webhook/pariciones-estimadas?desde=YYYY-MM-DD&hasta=YYYY-MM-DD"
+    },
+    {
+      "parameters": {
+        "jsCode": "const query = $json.query ?? {};\nconst errors = [];\n\nconst desde = String(query.desde ?? '').trim();\nconst hasta = String(query.hasta ?? '').trim();\n\nfunction isValidIsoDate(value) {\n  const match = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(value);\n  if (!match) return false;\n  const year = Number(match[1]);\n  const month = Number(match[2]);\n  const day = Number(match[3]);\n  const parsed = new Date(Date.UTC(year, month - 1, day));\n  return parsed.getUTCFullYear() === year &&\n    parsed.getUTCMonth() === month - 1 &&\n    parsed.getUTCDate() === day;\n}\n\nif (!isValidIsoDate(desde)) errors.push('desde debe ser una fecha valida con formato YYYY-MM-DD');\nif (!isValidIsoDate(hasta)) errors.push('hasta debe ser una fecha valida con formato YYYY-MM-DD');\nif (errors.length === 0 && desde > hasta) errors.push('desde no puede ser posterior a hasta');\n\nreturn [{\n  json: {\n    estado_validacion: errors.length === 0 ? 'valido' : 'invalido',\n    error: errors.join('; '),\n    desde,\n    hasta,\n  },\n}];"
+      },
+      "id": "3d9e102f-c363-4af0-8b6b-4be4ea95758c",
+      "name": "Validar Rango Pariciones",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        496
+      ],
+      "notesInFlow": true,
+      "notes": "Valida query params desde y hasta en formato YYYY-MM-DD."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "78e810f1-31a0-4063-8481-462d8953a278",
+              "leftValue": "={{ $json.estado_validacion }}",
+              "rightValue": "valido",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f2b4feaf-1856-4baa-8f67-a1efdafbf84a",
+      "name": "IF Rango Valido",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1jcH9i34wiz3YTQGp9GIlfD-K4wz3Ees67uyPqMYSWCw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "tactos",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "5f03205e-497e-45f4-8205-9820b70a6e09",
+      "name": "Leer Sheet Tactos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2368,
+        352
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zutwWUuBRKNBytkd",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "Lee la pestaña tactos, donde están resultado y fecha_probable_parto."
+    },
+    {
+      "parameters": {
+        "jsCode": "const rango = $('Validar Rango Pariciones').first().json;\nconst rows = $input.all().map(item => item.json);\n\nconst data = rows\n  .filter(row => String(row.resultado ?? '').trim().toLowerCase() === 'positivo')\n  .filter(row => {\n    const fecha = String(row.fecha_probable_parto ?? '').trim();\n    return fecha >= rango.desde && fecha <= rango.hasta;\n  })\n  .sort((a, b) => String(a.fecha_probable_parto).localeCompare(String(b.fecha_probable_parto)))\n  .map(row => ({\n    id_tacto: row.id_tacto ?? '',\n    caravana: row.caravana ?? '',\n    fecha_tacto: row.fecha_tacto ?? '',\n    resultado: row.resultado ?? '',\n    dias_gestacion_estimados: row.dias_gestacion_estimados ?? '',\n    fecha_probable_parto: row.fecha_probable_parto ?? '',\n    observaciones: row.observaciones ?? '',\n    creado_en: row.creado_en ?? '',\n  }));\n\nreturn [{\n  json: {\n    ok: true,\n    desde: rango.desde,\n    hasta: rango.hasta,\n    total: data.length,\n    data,\n  },\n}];"
+      },
+      "id": "09c728a4-2cf8-4589-80ca-a70085f07ef7",
+      "name": "Filtrar Pariciones Estimadas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2608,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "ece58ff4-1265-48de-b5d4-1e34701fbc95",
+      "name": "Respuesta Pariciones Estimadas OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2816,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ (() => { const message = $('Validar Rango Pariciones').first().json.error; return JSON.stringify({ ok: false, error: { message, code: 'VALIDATION_ERROR' } }); })() }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "808b137c-449d-4154-bfdd-e791038d19b5",
+      "name": "Respuesta Pariciones Estimadas Error 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2384,
+        592
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ (() => { const message = $json.error?.message || $json.message || 'Error externo sin detalle'; return JSON.stringify({ ok: false, etapa: 'google_sheets_tactos', error: { message, code: 'SHEETS_ERROR' }, execution_id: $execution.id }); })() }}",
+        "options": {
+          "responseCode": 502,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "73f0eb4d-3458-4657-a253-16eef4c326f9",
+      "name": "Respuesta Pariciones Estimadas Error Sheets",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2608,
+        592
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Pariciones Estimadas": {
+      "main": [
+        [
+          {
+            "node": "Validar Rango Pariciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Rango Pariciones": {
+      "main": [
+        [
+          {
+            "node": "IF Rango Valido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Rango Valido": {
+      "main": [
+        [
+          {
+            "node": "Leer Sheet Tactos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta Pariciones Estimadas Error 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Sheet Tactos": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Pariciones Estimadas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta Pariciones Estimadas Error Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Pariciones Estimadas": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Pariciones Estimadas OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "tags": []
+}

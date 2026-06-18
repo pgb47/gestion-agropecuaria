@@ -1,0 +1,109 @@
+{
+  "name": "Listar Tactos",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "tactos",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "c51022ac-f02e-4329-bea9-06f5cdb779b8",
+      "name": "Webhook Listar Tactos",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        624,
+        336
+      ],
+      "webhookId": "listar-tactos"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1jcH9i34wiz3YTQGp9GIlfD-K4wz3Ees67uyPqMYSWCw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "tactos",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "7d362466-9bc5-45f6-a53b-74824e3b3de6",
+      "name": "Leer Sheet Tactos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        848,
+        336
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zutwWUuBRKNBytkd",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, data: $input.all().map(i => i.json) }) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "47cf9b3e-5924-448c-897a-44c3b8176eb7",
+      "name": "Respuesta Lista",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1072,
+        336
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Listar Tactos": {
+      "main": [
+        [
+          {
+            "node": "Leer Sheet Tactos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Sheet Tactos": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Lista",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "tags": []
+}

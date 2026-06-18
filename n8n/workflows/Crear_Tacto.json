@@ -1,0 +1,676 @@
+{
+  "name": "Crear Tacto",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "tactos",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "id": "f64b1b55-717b-41b0-8f6b-80703252e49f",
+      "name": "Webhook Crear Tacto",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        12640,
+        7504
+      ],
+      "webhookId": "crear-tacto",
+      "notesInFlow": true,
+      "notes": "Entrada HTTP POST.\n\nProducción: https://auto09.academia.ar/webhook/tactos\nPrueba manual: https://auto09.academia.ar/webhook-test/tactos\n\nLa URL de prueba solo escucha después de Execute workflow. Lovable debe usar siempre la URL de producción y el workflow debe estar publicado."
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body ?? {};\nconst errors = [];\n\nconst caravana = String(body.caravana ?? '').trim().toUpperCase();\nconst fechaTacto = String(body.fecha_tacto ?? body.fecha ?? '').trim();\nconst resultadoRaw = String(body.resultado ?? '')\n  .trim()\n  .toLowerCase()\n  .normalize('NFD')\n  .replace(/[\\u0300-\\u036f]/g, '');\nconst observaciones = String(body.observaciones ?? '').trim();\n\nif (!caravana) errors.push('caravana es obligatoria');\n\nconst dateMatch = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(fechaTacto);\nlet validDate = false;\nif (dateMatch) {\n  const year = Number(dateMatch[1]);\n  const month = Number(dateMatch[2]);\n  const day = Number(dateMatch[3]);\n  const parsed = new Date(Date.UTC(year, month - 1, day));\n  validDate =\n    parsed.getUTCFullYear() === year &&\n    parsed.getUTCMonth() === month - 1 &&\n    parsed.getUTCDate() === day;\n}\nif (!validDate) errors.push('fecha debe ser una fecha válida con formato YYYY-MM-DD');\n\nconst allowedResults = ['positivo', 'negativo'];\nif (!allowedResults.includes(resultadoRaw)) {\n  errors.push('resultado debe ser positivo o negativo');\n}\n\nconst daysRaw = body.dias_gestacion_estimados ?? body.dias_gestacion;\nlet diasGestacion = '';\nif (resultadoRaw === 'positivo') {\n  const parsedDays = Number(daysRaw);\n  if (\n    daysRaw === undefined ||\n    daysRaw === null ||\n    daysRaw === '' ||\n    !Number.isInteger(parsedDays) ||\n    parsedDays < 0 ||\n    parsedDays > 283\n  ) {\n    errors.push('días de gestación debe ser un entero entre 0 y 283 para un resultado positivo');\n  } else {\n    diasGestacion = parsedDays;\n  }\n}\n\nreturn [{\n  json: {\n    estado_validacion: errors.length === 0 ? 'valido' : 'invalido',\n    error: errors.join('; '),\n    caravana,\n    fecha_tacto: fechaTacto,\n    resultado: resultadoRaw,\n    dias_gestacion_estimados: diasGestacion,\n    observaciones,\n  },\n}];"
+      },
+      "id": "05171906-ba76-4f8f-a8f5-cf8fa26a9aed",
+      "name": "Validar Entrada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        12864,
+        7504
+      ],
+      "notesInFlow": true,
+      "notes": "Normaliza y valida el JSON recibido.\n\nObligatorios: caravana, fecha y resultado.\nfecha: YYYY-MM-DD.\nresultado: positivo o negativo.\nSi es positivo, dias_gestacion debe ser un entero entre 0 y 283.\nAcepta fecha o fecha_tacto, y dias_gestacion o dias_gestacion_estimados."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "efc4a68f-42d0-46dd-a2b2-e91c7f5db19b",
+              "leftValue": "={{ $json.estado_validacion }}",
+              "rightValue": "valido",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "b3fa5cd7-3c06-40fb-94c5-b9d5c4585459",
+      "name": "IF Datos Validos",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        13104,
+        7504
+      ],
+      "notesInFlow": true,
+      "notes": "Ruta TRUE: continúa con la búsqueda de la caravana.\nRuta FALSE: devuelve HTTP 400 con el detalle de validación."
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1jcH9i34wiz3YTQGp9GIlfD-K4wz3Ees67uyPqMYSWCw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "maestra_vacas",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "caravana",
+              "lookupValue": "={{ $json.caravana }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a6030a7d-7c35-4da8-a1cf-f20e422fb667",
+      "name": "Buscar Caravana en Maestra",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        13312,
+        7408
+      ],
+      "alwaysOutputData": true,
+      "notesInFlow": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zutwWUuBRKNBytkd",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "Busca en la pestaña maestra_vacas usando la columna caravana.\n\nIMPORTANTE: Always Output Data debe permanecer activado. Sin esta opción, una caravana inexistente detiene el flujo antes de poder devolver el error 404."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.caravana }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "23b88557-a871-4b87-bc51-f4b9f7eebe9b",
+      "name": "IF Caravana Existe",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        13536,
+        7408
+      ],
+      "notesInFlow": true,
+      "notes": "Comprueba si Google Sheets devolvió una fila con caravana.\nTRUE: registra el tacto.\nFALSE: devuelve HTTP 404."
+    },
+    {
+      "parameters": {
+        "jsCode": "const entrada = $('Validar Entrada').first().json;\n\nlet fechaProbableParto = '';\nif (entrada.resultado === 'positivo') {\n  const fecha = new Date(entrada.fecha_tacto + 'T00:00:00.000Z');\n  fecha.setUTCDate(fecha.getUTCDate() + (283 - entrada.dias_gestacion_estimados));\n  fechaProbableParto = fecha.toISOString().slice(0, 10);\n}\n\nreturn [{\n  json: {\n    id_tacto: 'T-' + Date.now(),\n    caravana: entrada.caravana,\n    fecha_tacto: entrada.fecha_tacto,\n    resultado: entrada.resultado,\n    dias_gestacion_estimados: entrada.dias_gestacion_estimados,\n    fecha_probable_parto: fechaProbableParto,\n    observaciones: entrada.observaciones,\n    creado_en: new Date().toISOString(),\n  },\n}];"
+      },
+      "id": "7c9c2132-5ffa-42f2-b19c-63801f36851f",
+      "name": "Regla Negocio (Equipo 1)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        13760,
+        7296
+      ],
+      "notesInFlow": true,
+      "notes": "Construye la fila final para Google Sheets.\n\nPara resultados positivos calcula:\nfecha_probable_parto = fecha_tacto + (283 - dias_gestacion_estimados).\n\nPara negativos deja días de gestación y fecha probable vacíos."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1jcH9i34wiz3YTQGp9GIlfD-K4wz3Ees67uyPqMYSWCw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "tactos",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_tacto",
+              "displayName": "id_tacto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "caravana",
+              "displayName": "caravana",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fecha_tacto",
+              "displayName": "fecha_tacto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "resultado",
+              "displayName": "resultado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "dias_gestacion_estimados",
+              "displayName": "dias_gestacion_estimados",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fecha_probable_parto",
+              "displayName": "fecha_probable_parto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "observaciones",
+              "displayName": "observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "creado_en",
+              "displayName": "creado_en",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "5de8e5e1-c3a3-44bc-a07b-7ba79d68ef07",
+      "name": "Guardar en Sheet Tactos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        13984,
+        7296
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zutwWUuBRKNBytkd",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "Agrega una fila en la pestaña tactos mediante autoMapInputData.\n\nLos nombres del JSON deben coincidir exactamente con los encabezados. No cambiar encabezados del Sheet sin actualizar este nodo."
+    },
+    {
+      "parameters": {
+        "sendTo": "grupo3ucatp@gmail.com",
+        "subject": "=Nuevo tacto registrado - Caravana {{ $json.caravana }}",
+        "message": "=<h2>Tacto registrado</h2><ul><li><b>Caravana:</b> {{ $json.caravana }}</li><li><b>Fecha:</b> {{ $json.fecha_tacto }}</li><li><b>Resultado:</b> {{ $json.resultado }}</li><li><b>Días gestación:</b> {{ $json.dias_gestacion_estimados }}</li><li><b>Fecha probable de parto:</b> {{ $json.fecha_probable_parto || 'No corresponde' }}</li><li><b>Observaciones:</b> {{ $json.observaciones || 'Sin observaciones' }}</li></ul>",
+        "options": {}
+      },
+      "id": "b7016509-404a-4316-b6e4-6a7456750111",
+      "name": "Enviar Reporte Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        14208,
+        7296
+      ],
+      "webhookId": "d89bbb57-9be2-4d14-8048-e8706174be64",
+      "notesInFlow": true,
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "RwDuKfd7kjgW5NNX",
+          "name": "Gmail account"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "Envía el resumen después de guardar correctamente la fila.\nSi falla Gmail, devuelve HTTP 502 con etapa gmail y registro_guardado: true."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, data: $('Regla Negocio (Equipo 1)').first().json }) }}",
+        "options": {
+          "responseCode": 201,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "07f3a9ff-de1b-4768-a2d0-86c67ea6c2e4",
+      "name": "Respuesta OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        14432,
+        7296
+      ],
+      "notesInFlow": true,
+      "notes": "Respuesta HTTP 201 para Lovable.\nDevuelve { ok: true, data: ... } con la fila registrada."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ (() => { const message = 'La caravana ' + $('Validar Entrada').first().json.caravana + ' no existe en la planilla maestra'; return JSON.stringify({ ok: false, error: { message, code: 'CARAVANA_NOT_FOUND' } }); })() }}",
+        "options": {
+          "responseCode": 404,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "d50c8a18-d555-4f35-81af-58cb047ec60e",
+      "name": "Respuesta Error 404",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        13760,
+        7520
+      ],
+      "notesInFlow": true,
+      "notes": "Respuesta HTTP 404.\nIndica que la caravana no existe en maestra_vacas."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ (() => { const message = $('Validar Entrada').first().json.error; return JSON.stringify({ ok: false, error: { message, code: 'VALIDATION_ERROR' } }); })() }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "a21c39a0-14b9-44fc-b70e-81e1246c4d05",
+      "name": "Respuesta Error 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        13312,
+        7664
+      ],
+      "notesInFlow": true,
+      "notes": "Respuesta HTTP 400.\nIndica datos faltantes o inválidos. Lovable debe mostrar el campo error."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ (() => { const message = $json.error?.message || $json.message || 'Error externo sin detalle'; return JSON.stringify({ ok: false, etapa: 'google_sheets_buscar', error: { message, code: 'UPSTREAM_ERROR' }, execution_id: $execution.id }); })() }}",
+        "options": {
+          "responseCode": 502,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "a6647fec-314a-4a6d-8e45-b7145bfad460",
+      "name": "Error Google Sheets - Buscar",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        13536,
+        7744
+      ],
+      "notesInFlow": true,
+      "notes": "Devuelve HTTP 502 a Lovable con el mensaje técnico recibido desde google_sheets_buscar."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ (() => { const message = $json.error?.message || $json.message || 'Error externo sin detalle'; return JSON.stringify({ ok: false, etapa: 'google_sheets_guardar', error: { message, code: 'UPSTREAM_ERROR' }, execution_id: $execution.id }); })() }}",
+        "options": {
+          "responseCode": 502,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "215c7f64-e5c6-4292-8b43-22fadff83843",
+      "name": "Error Google Sheets - Guardar",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        14208,
+        7664
+      ],
+      "notesInFlow": true,
+      "notes": "Devuelve HTTP 502 a Lovable con el mensaje técnico recibido desde google_sheets_guardar."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ (() => { const message = $json.error?.message || $json.message || 'Error externo sin detalle'; return JSON.stringify({ ok: false, etapa: 'gmail', error: { message, code: 'UPSTREAM_ERROR' }, registro_guardado: true, execution_id: $execution.id }); })() }}",
+        "options": {
+          "responseCode": 502,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "f1b8d7d4-6cdf-4b72-b5ac-299ee2636f6a",
+      "name": "Error Gmail",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        14432,
+        7664
+      ],
+      "notesInFlow": true,
+      "notes": "Devuelve HTTP 502 a Lovable con el mensaje técnico recibido desde gmail."
+    },
+    {
+      "parameters": {
+        "content": "## README - Crear Tacto\n\n**Objetivo:** recibir un tacto desde Lovable, validar la entrada, comprobar la caravana, guardar en Google Sheets y enviar un correo.\n\n**Producción:** `POST https://auto09.academia.ar/webhook/tactos`\n\n**Prueba:** `POST https://auto09.academia.ar/webhook-test/tactos`\n\nLa URL de prueba requiere presionar **Execute workflow** y permanece activa temporalmente. Lovable debe usar únicamente la URL de producción. Después de importar cambios hay que guardar y volver a publicar el workflow.",
+        "height": 350,
+        "width": 520,
+        "color": 5
+      },
+      "id": "a6ed4906-bc07-4dfa-a8bb-55a5fa63b887",
+      "name": "README - Crear Tacto",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        12608,
+        6784
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Contrato API\n\nBody JSON para resultado positivo:\n\n```json\n{\n  \"caravana\": \"A-1001\",\n  \"fecha\": \"2026-06-15\",\n  \"resultado\": \"positivo\",\n  \"dias_gestacion\": 60,\n  \"observaciones\": \"Control normal\"\n}\n```\n\nPara resultado negativo no enviar `dias_gestacion`.\n\nRespuestas:\n- **201:** registro creado.\n- **400:** datos inválidos.\n- **404:** caravana inexistente.\n- **502:** error técnico de Google Sheets o Gmail. Revisar `etapa`, `error.message` y `execution_id`.\n\nLovable debe leer el JSON y mostrar `error.message` cuando la respuesta HTTP no sea exitosa.",
+        "height": 470,
+        "width": 500,
+        "color": 4
+      },
+      "id": "45511673-d5bb-48ac-95b5-0d89132adeaa",
+      "name": "Contrato API",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        13152,
+        6784
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Google Sheets\n\nDocumento configurado en los nodos:\n`1jcH9i34wiz3YTQGp9GIlfD-K4wz3Ees67uyPqMYSWCw`\n\n**maestra_vacas**\n- La primera fila contiene encabezados.\n- Debe existir la columna exacta `caravana`.\n\n**tactos**\n- `id_tacto`\n- `caravana`\n- `fecha_tacto`\n- `resultado`\n- `dias_gestacion_estimados`\n- `fecha_probable_parto`\n- `observaciones`\n- `creado_en`\n\nNo cambiar mayúsculas, espacios ni nombres de estas columnas sin actualizar el nodo Guardar en Sheet Tactos.",
+        "height": 460,
+        "width": 520,
+        "color": 3
+      },
+      "id": "e834cb80-aab6-40b4-a6df-3f4170af6ff2",
+      "name": "Google Sheets",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        13664,
+        6784
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Diagnóstico rápido\n\n1. Confirmar que el workflow esté **publicado**.\n2. En Lovable verificar que la URL no contenga `webhook-test`.\n3. Abrir **Executions** y localizar el primer nodo rojo.\n4. Error 400: revisar el JSON enviado y los nombres de campos.\n5. Error 404: comprobar la caravana en `maestra_vacas`.\n6. El flujo se detiene en la búsqueda: confirmar **Always Output Data**.\n7. Error al guardar: revisar encabezados de `tactos` y credencial de Google Sheets.\n8. Error Gmail con `registro_guardado: true`: el tacto sí fue guardado; solo falló el correo.\n9. Si se importa como workflow nuevo, despublicar el anterior: n8n no admite dos webhooks POST con la misma ruta `/tactos`.",
+        "height": 470,
+        "width": 560,
+        "color": 2
+      },
+      "id": "412401ca-1851-46b9-880c-84d7e617b701",
+      "name": "Diagnóstico rápido",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        14208,
+        6784
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Crear Tacto": {
+      "main": [
+        [
+          {
+            "node": "Validar Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Datos Validos": {
+      "main": [
+        [
+          {
+            "node": "Buscar Caravana en Maestra",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta Error 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Caravana en Maestra": {
+      "main": [
+        [
+          {
+            "node": "IF Caravana Existe",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Google Sheets - Buscar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Caravana Existe": {
+      "main": [
+        [
+          {
+            "node": "Regla Negocio (Equipo 1)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta Error 404",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Regla Negocio (Equipo 1)": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Sheet Tactos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Sheet Tactos": {
+      "main": [
+        [
+          {
+            "node": "Enviar Reporte Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Google Sheets - Guardar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Reporte Email": {
+      "main": [
+        [
+          {
+            "node": "Respuesta OK",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Gmail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar Entrada": {
+      "main": [
+        [
+          {
+            "node": "IF Datos Validos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "tags": []
+}

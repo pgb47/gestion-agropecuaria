@@ -1,0 +1,179 @@
+{
+  "name": "Consulta Filtrada -tactos",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "tactos-consulta",
+        "responseMode": "responseNode",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "931c4375-fc5d-4dbf-9087-74f9fd19f8cf",
+      "name": "Webhook Consulta Filtrada",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        656
+      ],
+      "webhookId": "consulta-tactos",
+      "notesInFlow": true,
+      "notes": "Endpoint produccion: GET /webhook/tactos-consulta?caravana=A-1001&resultado=positivo&desde=YYYY-MM-DD&hasta=YYYY-MM-DD"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1jcH9i34wiz3YTQGp9GIlfD-K4wz3Ees67uyPqMYSWCw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "tactos",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "11b19c55-eb0c-4234-bf26-d8fb019d8873",
+      "name": "Leer Sheet Tactos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2224,
+        656
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zutwWUuBRKNBytkd",
+          "name": "Google Sheets account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const query = $('Webhook Consulta Filtrada').first().json.query ?? {};\nconst filas = $input.all().map(i => i.json);\n\nconst caravana = String(query.caravana ?? '').trim().toUpperCase();\nconst resultado = String(query.resultado ?? '').trim().toLowerCase();\nconst desde = String(query.desde ?? '').trim();\nconst hasta = String(query.hasta ?? '').trim();\n\nconst isTodos = !resultado || resultado === 'todos' || resultado === 'todo';\n\nconst data = filas\n  .filter(row => !caravana || String(row.caravana ?? '').trim().toUpperCase() === caravana)\n  .filter(row => isTodos || String(row.resultado ?? '').trim().toLowerCase() === resultado)\n  .filter(row => !desde || String(row.fecha_tacto ?? '').trim() >= desde)\n  .filter(row => !hasta || String(row.fecha_tacto ?? '').trim() <= hasta)\n  .sort((a, b) => String(b.fecha_tacto ?? '').localeCompare(String(a.fecha_tacto ?? '')));\n\nreturn [{\n  json: {\n    ok: true,\n    filtros: { caravana, resultado: isTodos ? 'todos' : resultado, desde, hasta },\n    total: data.length,\n    data,\n  },\n}];"
+      },
+      "id": "7c5278fa-8154-4ce3-83b2-eba4bc062be0",
+      "name": "Filtrar Tactos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2448,
+        656
+      ],
+      "notesInFlow": true,
+      "notes": "Filtra por caravana, resultado, desde y hasta. Las fechas deben llegar como YYYY-MM-DD."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "adee719e-997a-4a5a-a2c5-71b632cd3528",
+      "name": "Respuesta Consulta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2672,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ (() => { const message = $json.error?.message || $json.message || 'Error externo sin detalle'; return JSON.stringify({ ok: false, etapa: 'google_sheets_tactos', error: { message, code: 'SHEETS_ERROR' }, execution_id: $execution.id }); })() }}",
+        "options": {
+          "responseCode": 502,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "16d0658f-8d82-42de-b598-744b1becd5e1",
+      "name": "Respuesta Error Sheets",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2448,
+        848
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Consulta Filtrada": {
+      "main": [
+        [
+          {
+            "node": "Leer Sheet Tactos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leer Sheet Tactos": {
+      "main": [
+        [
+          {
+            "node": "Filtrar Tactos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta Error Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrar Tactos": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Consulta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "tags": []
+}

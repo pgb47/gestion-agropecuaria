@@ -1,0 +1,479 @@
+{
+  "name": "Crear Paricion",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "pariciones",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "cacf19f2-5eaf-4125-a9e1-3f2b021aec0c",
+      "name": "Webhook Crear Paricion",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        976,
+        464
+      ],
+      "webhookId": "crear-paricion"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body.caravana }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "id": "a1b2c3d4-0001-0001-0001-000000000001"
+            },
+            {
+              "leftValue": "={{ $json.body.fecha }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "id": "a1b2c3d4-0001-0001-0001-000000000002"
+            },
+            {
+              "leftValue": "={{ $json.body.sexo_cria }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              },
+              "id": "a1b2c3d4-0001-0001-0001-000000000003"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "36937e93-4d72-4f6a-896f-a14b9ea65946",
+      "name": "IF Datos Validos",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1jcH9i34wiz3YTQGp9GIlfD-K4wz3Ees67uyPqMYSWCw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "maestra_vacas",
+          "mode": "name"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "caravana",
+              "lookupValue": "={{ $json.body.caravana }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "56534fec-72a2-4665-bec1-2e35eb95494a",
+      "name": "Buscar Caravana en Maestra",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1408,
+        352
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zutwWUuBRKNBytkd",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.caravana }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "e71073f8-4519-400d-95a9-b3e866e7eede",
+      "name": "IF Caravana Existe",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1632,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// =========================================\n// REGLA DE NEGOCIO — EQUIPO 1 AQUÍ\n// Ej: impedir parición sin tacto positivo previo.\n// Por ahora pasa los datos tal cual (passthrough).\n// =========================================\nconst body = $('Webhook Crear Paricion').first().json.body;\n\nreturn [{ json: {\n  id_paricion: 'P-' + Date.now(),\n  caravana: body.caravana,\n  fecha_paricion: body.fecha,\n  sexo_cria: body.sexo_cria,\n  peso_nacer: body.peso_nacer || '',\n  caravana_cria: body.caravana_cria || '',\n  observaciones: body.observaciones || '',\n  creado_en: new Date().toISOString()\n} }];"
+      },
+      "id": "2b29eb57-62bb-4f5e-a89f-079a321b941a",
+      "name": "Regla Negocio (Equipo 1)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1856,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1jcH9i34wiz3YTQGp9GIlfD-K4wz3Ees67uyPqMYSWCw",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "pariciones",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "id_paricion",
+              "displayName": "id_paricion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "caravana",
+              "displayName": "caravana",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "fecha_paricion",
+              "displayName": "fecha_paricion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "sexo_cria",
+              "displayName": "sexo_cria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "peso_nacer",
+              "displayName": "peso_nacer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "caravana_cria",
+              "displayName": "caravana_cria",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "observaciones",
+              "displayName": "observaciones",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "creado_en",
+              "displayName": "creado_en",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "4b5c5435-91ba-4802-985b-33d81d6919ed",
+      "name": "Guardar en Sheet Pariciones",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        2080,
+        336
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zutwWUuBRKNBytkd",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "grupo3ucatp@gmail.com",
+        "subject": "=Nueva paricion registrada - Caravana {{ $json.caravana }}",
+        "message": "=<h2>Paricion registrada</h2><ul><li><b>Caravana:</b> {{ $json.caravana }}</li><li><b>Fecha:</b> {{ $json.fecha_paricion }}</li><li><b>Sexo cria:</b> {{ $json.sexo_cria }}</li><li><b>Peso al nacer:</b> {{ $json.peso_nacer }}</li><li><b>Observaciones:</b> {{ $json.observaciones }}</li></ul>",
+        "options": {}
+      },
+      "id": "68d13685-ad26-4a53-a518-27b17f843f19",
+      "name": "Enviar Reporte Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        2304,
+        336
+      ],
+      "webhookId": "4e294dbb-b010-4c93-a460-ced3c37b060e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "RwDuKfd7kjgW5NNX",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: true, data: $('Regla Negocio (Equipo 1)').first().json }) }}",
+        "options": {
+          "responseCode": 201,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "969b86ba-a8e8-40c8-ab2b-96819fc4af61",
+      "name": "Respuesta OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, error: 'La caravana ' + $('Webhook Crear Paricion').first().json.body.caravana + ' no existe en la planilla maestra' }) }}",
+        "options": {
+          "responseCode": 404,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "066d652c-dc08-45e1-aec9-5e0dd598fc38",
+      "name": "Respuesta Error 404",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1856,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ ok: false, error: 'Faltan campos obligatorios: se requieren caravana, fecha y sexo_cria' }) }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "5a4a9a17-55b6-4068-8a7b-ba60f6f2cf00",
+      "name": "Respuesta Error 400",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1408,
+        624
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Crear Paricion": {
+      "main": [
+        [
+          {
+            "node": "IF Datos Validos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Datos Validos": {
+      "main": [
+        [
+          {
+            "node": "Buscar Caravana en Maestra",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta Error 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Caravana en Maestra": {
+      "main": [
+        [
+          {
+            "node": "IF Caravana Existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Caravana Existe": {
+      "main": [
+        [
+          {
+            "node": "Regla Negocio (Equipo 1)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta Error 404",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Regla Negocio (Equipo 1)": {
+      "main": [
+        [
+          {
+            "node": "Guardar en Sheet Pariciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar en Sheet Pariciones": {
+      "main": [
+        [
+          {
+            "node": "Enviar Reporte Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar Reporte Email": {
+      "main": [
+        [
+          {
+            "node": "Respuesta OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "pinData": {},
+  "tags": []
+}
